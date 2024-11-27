@@ -1,0 +1,32 @@
+<nav>
+  <h2>VRV</h2>
+  <ul>
+    <li><a href="/">Home</a></li>
+    <% if (user) { %>
+    <li><a href="/user/profile">Profile</a></li>
+    <% if (user.role === 'ADMIN') { %>
+    <li><a href="/admin/users">Manage Users</a></li>
+    <% } %>
+    <li><a href="/auth/logout">Logout</a></li>
+    <% } else { %>
+    <li><a href="/auth/register">Register</a></li>
+    <li><a href="/auth/login">Login</a></li>
+    <% } %>
+  </ul>
+  <button class="nav-toggle">
+    <span class="bar"></span>
+    <span class="bar"></span>
+    <span class="bar"></span>
+  </button>
+</nav>
+
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const navToggle = document.querySelector('.nav-toggle');
+    const navLinks = document.querySelector('nav > ul');
+
+    navToggle.addEventListener('click', () => {
+      navLinks.classList.toggle('active');
+    });
+  });
+</script>
