@@ -1,7 +1,6 @@
 Role Based Access Control
 
 This is a Role Based Access Control application using Nodejs, Express, Passport Js, etc.
-You can use this application as the starting point for whatever project you are going to build which needs authentication and authorization.
 
 For authentication we have only Email & Password option but other authentication options using OAuth/OAuth2.0 like Google, Facebook, Apple, GitHub, etc, can be easily incorporated.
 
