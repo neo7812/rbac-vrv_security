@@ -27,6 +27,7 @@ Put your credentials in the .env file.
 PORT=3000
 MONGODB_URI=YOUR_MONGODB_URI(example: mongodb://localhost:27017)
 DB_NAME=YOUR_DB_NAME
+ADMIN_NAME=admin@gmail.com
 ```
 
 Install MongoDB (Linux Ubuntu)
