@@ -74,8 +74,12 @@ router.get(
   '/logout',
   ensureLoggedIn({ redirectTo: '/' }),
   async (req, res, next) => {
-    req.logout();
-    res.redirect('/');
+    req.logout((err) => {
+      if (err) {
+        return next(err); // Pass the error to the error handler
+      }
+      res.redirect('/'); // Redirect after successful logout
+    });
   }
 );
 
