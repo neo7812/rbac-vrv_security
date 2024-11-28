@@ -1,144 +1,151 @@
-const User = require('../models/user.model');
-const router = require('express').Router();
+const express = require('express');
 const mongoose = require('mongoose');
-const { roles } = require('../utils/constants');
 const bcrypt = require('bcrypt');
+const { body, validationResult } = require('express-validator');
+const { roles } = require('../utils/constants');
+const User = require('../models/user.model');
 
+const router = express.Router();
+
+// Middleware for validating ID
+const validateObjectId = (req, res, next) => {
+  const { id } = req.body || req.params;
+  if (!mongoose.Types.ObjectId.isValid(id)) {
+    req.flash('error', 'Invalid ID format');
+    return res.status(400).redirect('back');
+  }
+  next();
+};
+
+// Get All Users with Optional Search and Pagination
 router.get('/users', async (req, res, next) => {
   try {
-    const users = await User.find();
-    // res.send(users);
-    res.render('manage-users', { users });
+    const { searchQuery = '', page = 1 } = req.query;
+    const limit = 10; // Number of users per page
+    const skip = (page - 1) * limit;
+
+    const query = searchQuery
+      ? { email: { $regex: searchQuery, $options: 'i' } }
+      : {};
+
+    const [users, totalUsers] = await Promise.all([
+      User.find(query).limit(limit).skip(skip),
+      User.countDocuments(query),
+    ]);
+
+    res.render('manage-users', {
+      users,
+      totalUsers,
+      page: parseInt(page, 10),
+      limit,
+      searchQuery,
+    });
   } catch (error) {
     next(error);
   }
 });
 
-router.get('/user/:id', async (req, res, next) => {
+
+// Get Single User
+router.get('/user/:id', validateObjectId, async (req, res, next) => {
   try {
     const { id } = req.params;
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-      req.flash('error', 'Invalid id');
-      res.redirect('/admin/users');
-      return;
-    }
     const person = await User.findById(id);
+    if (!person) {
+      req.flash('error', 'User not found');
+      return res.status(404).redirect('/admin/users');
+    }
     res.render('profile', { person });
   } catch (error) {
     next(error);
   }
 });
 
-// Add New User Route
-router.post('/add-user', async (req, res, next) => {
-  try {
-    const { email, password, role } = req.body;
+// Add New User
+router.post(
+  '/add-user',
+  [
+    body('email').isEmail().withMessage('Invalid email format'),
+    body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
+    body('role').isIn(Object.values(roles)).withMessage('Invalid role'),
+  ],
+  async (req, res, next) => {
+    try {
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        req.flash('error', errors.array().map((err) => err.msg).join(', '));
+        return res.status(400).redirect('/admin/users');
+      }
 
-    // Validate input
-    if (!email || !password || !role) {
-      req.flash('error', 'All fields are required');
-      return res.redirect('/admin/users');
+      const { email, password, role } = req.body;
+      const existingUser = await User.findOne({ email });
+
+      if (existingUser) {
+        req.flash('error', 'Email is already in use');
+        return res.status(400).redirect('/admin/users');
+      }
+
+      const hashedPassword = await bcrypt.hash(password, 10);
+      const newUser = new User({ email, password: hashedPassword, role });
+      await newUser.save();
+
+      req.flash('info', `User ${email} created successfully`);
+      res.redirect('/admin/users');
+    } catch (error) {
+      next(error);
     }
-
-    // Check if user already exists
-    const existingUser = await User.findOne({ email });
-    if (existingUser) {
-      req.flash('error', 'Email already in use');
-      return res.redirect('/admin/users');
-    }
-
-    // Hash the password
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    // Create new user
-    const newUser = new User({ email, password: hashedPassword, role });
-    await newUser.save();
-
-    req.flash('info', `User ${email} created successfully`);
-    res.redirect('/admin/users');
-  } catch (error) {
-    next(error);
   }
-});
-router.get('/users', async (req, res, next) => {
-  const { searchQuery } = req.query;
-  let users;
-  if (searchQuery) {
-    users = await User.find({
-      email: { $regex: searchQuery, $options: 'i' }
-    });
-  } else {
-    users = await User.find();
-  }
-  res.render('manage-users', { users });
-});
+);
 
-
-router.post('/update-role', async (req, res, next) => {
+// Update User Role
+router.post('/update-role', validateObjectId, async (req, res, next) => {
   try {
     const { id, role } = req.body;
 
-    // Checking for id and roles in req.body
-    if (!id || !role) {
-      req.flash('error', 'Invalid request');
-      return res.redirect('back');
-    }
-
-    // Check for valid mongoose objectID
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-      req.flash('error', 'Invalid id');
-      return res.redirect('back');
-    }
-
-    // Check for Valid role
-    const rolesArray = Object.values(roles);
-    if (!rolesArray.includes(role)) {
+    if (!role || !Object.values(roles).includes(role)) {
       req.flash('error', 'Invalid role');
-      return res.redirect('back');
+      return res.status(400).redirect('back');
     }
 
-    // Admin cannot remove himself/herself as an admin
     if (req.user.id === id) {
-      req.flash(
-        'error',
-        'Admins cannot remove themselves from Admin, ask another admin.'
-      );
-      return res.redirect('back');
+      req.flash('error', 'Admins cannot demote themselves');
+      return res.status(403).redirect('back');
     }
 
-    // Finally update the user
     const user = await User.findByIdAndUpdate(
       id,
       { role },
       { new: true, runValidators: true }
     );
 
-    req.flash('info', `updated role for ${user.email} to ${user.role}`);
+    if (!user) {
+      req.flash('error', 'User not found');
+      return res.status(404).redirect('back');
+    }
+
+    req.flash('info', `Role for ${user.email} updated to ${user.role}`);
     res.redirect('back');
   } catch (error) {
     next(error);
   }
 });
-// Delete User Route
-router.post('/delete-user', async (req, res, next) => {
+
+// Delete User
+router.post('/delete-user', validateObjectId, async (req, res, next) => {
   try {
     const { id } = req.body;
+    const user = await User.findByIdAndDelete(id);
 
-    // Validate ID
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-      req.flash('error', 'Invalid user ID');
-      return res.redirect('/admin/users');
+    if (!user) {
+      req.flash('error', 'User not found');
+      return res.status(404).redirect('/admin/users');
     }
 
-    // Delete the user
-    await User.findByIdAndDelete(id);
-
-    req.flash('info', 'User deleted successfully');
+    req.flash('info', `User ${user.email} deleted successfully`);
     res.redirect('/admin/users');
   } catch (error) {
     next(error);
   }
 });
-
 
 module.exports = router;

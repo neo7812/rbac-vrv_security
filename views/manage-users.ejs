@@ -52,4 +52,34 @@
   </tbody>
 </table>
 
+<div class="pagination">
+  <!-- Previous Button -->
+  <% if (page > 1) { %>
+    <a
+      href="?page=<%= page - 1 %>&searchQuery=<%= searchQuery || '' %>"
+      class="page-btn"
+    >
+      Previous
+    </a>
+  <% } else { %>
+    <span class="page-btn disabled">Previous</span>
+  <% } %>
+
+  <!-- Page Info -->
+  <span>Page <%= page %> of <%= Math.ceil(totalUsers / limit) %></span>
+
+  <!-- Next Button -->
+  <% if (page < Math.ceil(totalUsers / limit)) { %>
+    <a
+      href="?page=<%= page + 1 %>&searchQuery=<%= searchQuery || '' %>"
+      class="page-btn"
+    >
+      Next
+    </a>
+  <% } else { %>
+    <span class="page-btn disabled">Next</span>
+  <% } %>
+</div>
+
+
 <%- include ('layouts/footer') %>
