@@ -28,6 +28,7 @@ PORT=3000
 MONGODB_URI=YOUR_MONGODB_URI(example: mongodb://localhost:27017)
 DB_NAME=YOUR_DB_NAME
 ADMIN_NAME=admin@gmail.com
+SESSION_SECRET=something
 ```
 
 Install MongoDB (Linux Ubuntu)
