@@ -214,6 +214,22 @@ tbody td {
   background: linear-gradient(to bottom, #ff6a00, #ee0979);
 }
 
+.search-btn{
+  border-radius: 8px ;
+  padding: 6px;
+  cursor: pointer;
+}
+
+.search-btn:hover{
+  background-color: #0056b3;
+}
+
+.search_Query{
+  border-radius: 8px;
+  padding: 10px;
+  margin: 5px 10px;
+}
+
 .manage-user-form {
   display: flex;
   justify-content: flex-start;
@@ -242,6 +258,7 @@ tbody td {
   color: white;
   border: none;
   cursor: pointer;
+  border-radius: 8px;
 }
 
 .user-form button:hover {

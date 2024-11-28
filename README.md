@@ -4,6 +4,8 @@ This is a Role Based Access Control application using Nodejs, Express, Passport 
 
 For authentication we have only Email & Password option but other authentication options using OAuth/OAuth2.0 like Google, Facebook, Apple, GitHub, etc, can be easily incorporated.
 
+Also funtions like search, add, delete, update, users have been added along with pagination with maximum of 10 users per page.
+
 The application is based on the **MVC pattern** i.e. Model View Controller.
 
 **Mongoose** is used as an ORM for MongoDB for storing Users in Database.
